@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(conda run:*)",
+      "Read(//tmp/**)",
+      "Bash(mkdir -p torch_inspect)",
+      "Bash(unzip -o /tmp/torch_dl/torch-2.6.0+cu124-cp310-cp310-linux_x86_64.whl \"torch/lib/libc10.so\" -d /tmp/torch_inspect/)",
+      "Bash(nm -D /tmp/torch_inspect/torch/lib/libc10.so)",
+      "Read(//home/ahc/miniconda3/envs/metrologyIR/lib/python3.10/site-packages/torch/include/c10/util/**)",
+      "Read(//home/ahc/miniconda3/envs/metrologyIR/lib/python3.10/site-packages/torch/include/c10/**)",
+      "Read(//home/ahc/miniconda3/envs/metrologyIR/lib/python3.10/site-packages/torch/include/**)",
+      "Bash(pip download:*)",
+      "Bash(curl -sL \"https://files.pythonhosted.org/packages/source/f/flash-attn/flash_attn-2.8.3.tar.gz\" -o flash_attn-2.8.3.tar.gz)",
+      "Bash(tar -tzf flash_attn-2.8.3.tar.gz)",
+      "Bash(tar -xzf flash_attn-2.8.3.tar.gz \"flash_attn-2.8.3/setup.cfg\" \"flash_attn-2.8.3/setup.py\" --wildcards)",
+      "Bash(cat /tmp/flash_attn-2.8.3/setup.cfg)",
+      "Bash(tar -xzf flash_attn-2.8.3.tar.gz \"flash_attn-2.8.3/setup.py\")",
+      "Bash(conda search:*)",
+      "Bash(conda install:*)",
+      "Bash(conda list:*)",
+      "Read(//home/ahc/miniconda3/pkgs/**)",
+      "Bash(wget -q \"https://anaconda.org/pytorch/pytorch/2.6.0/download/linux-64/pytorch-2.6.0-gpu_cuda124_py310hf27f713_206.conda\" -O /tmp/pytorch_conda.conda)",
+      "Bash(curl -sL \"https://anaconda.org/pytorch/pytorch/2.6.0/download/linux-64/pytorch-2.6.0-gpu_cuda124_py310hf27f713_206.conda\" -w \"%{http_code} %{size_download}\\\\n\" -o /tmp/pytorch_conda2.conda)",
+      "Bash(FLASH_ATTENTION_FORCE_BUILD=TRUE TORCH_CUDA_ARCH_LIST=\"8.6\" conda run -n metrologyIR pip install flash-attn --no-build-isolation)",
+      "Read(//home/ahc/miniconda3/envs/metrologyIR/**)",
+      "Bash(nvcc --version)",
+      "Read(//usr/local/**)",
+      "Bash(python -c \"import numpy as np; d = np.load\\('/home/ahc/Documents/metrology_ir/pose_enc_qtf.npz'\\); print\\(list\\(d.keys\\(\\)\\)\\); print\\({k: d[k].shape for k in d}\\)\")",
+      "Read(//home/ahc/miniconda3/envs/**)"
+    ]
+  }
+}
