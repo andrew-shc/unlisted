@@ -1,0 +1,12 @@
+*
+!*/
+!*.*
+
+__pycache__/
+*.py[cod]
+*.pyd
+*.so
+.Python
+build/
+dist/
+results/
