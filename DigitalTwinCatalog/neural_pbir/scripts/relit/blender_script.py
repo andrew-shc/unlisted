@@ -119,6 +119,7 @@ if render_exr:
 else:
     bpy.context.scene.render.image_settings.file_format = "PNG"
     bpy.context.scene.render.image_settings.color_depth = "8"
+bpy.context.scene.render.image_settings.color_mode = "RGB"
 
 
 # Create input render layer node.

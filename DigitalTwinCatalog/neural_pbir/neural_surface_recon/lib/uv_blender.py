@@ -12,14 +12,14 @@ import bpy
 
 def import_obj(obj_path):
     if os.path.exists(obj_path):
-        bpy.ops.wm.obj_import(filepath=obj_path)
+        bpy.ops.import_scene.obj(filepath=obj_path)
     else:
         print(obj_path + " does not exists!")
 
 
 def export_obj(obj_path):
-    bpy.ops.wm.obj_export(
-        filepath=obj_path, export_normals=False, export_materials=False, export_selected_objects=True
+    bpy.ops.export_scene.obj(
+        filepath=obj_path, use_normals=False, use_materials=False, use_selection=True
     )
 
 

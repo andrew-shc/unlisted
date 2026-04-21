@@ -78,6 +78,7 @@ def compute_metrics_image_similarity(results: list, scale_invariant=True) -> dic
         if item['output_image'] is None:
             input_rgb_hdr = np.ones((BENCHMARK_RESOLUTION, BENCHMARK_RESOLUTION, 3), dtype=np.float32)
         elif item['output_image'].endswith('.exr'):
+            print(item["output_image"])
             input_rgb_hdr = load_rgb_exr(item['output_image'])
         elif item['output_image'].endswith('.png'):
             input_rgb_ldr = load_rgb_png(item['output_image'])

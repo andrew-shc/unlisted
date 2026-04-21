@@ -46,6 +46,13 @@ for CAM in sorted(
         / "env_map_for_blender"
         / envmap_name
     )
+
+    if not os.path.isfile(CKPT_GEO) or not os.path.isfile(CKPT_ALBEDO) or not os.path.isfile(CKPT_ROUGH) or not os.path.isfile(CKPT_ENV):
+        print(
+            f"Skipping {scene_name} despite having cameras_novel.json in the Stanford-ORB dataset."
+        )
+        continue
+
     assert os.path.isfile(CKPT_GEO)
     assert os.path.isfile(CKPT_ALBEDO)
     assert os.path.isfile(CKPT_ROUGH)
@@ -53,7 +60,8 @@ for CAM in sorted(
     subprocess.run(
         [
             "python",
-            "scripts/relit/relit.py",
+            # "scripts/relit/relit.py",
+            "DigitalTwinCatalog/neural_pbir/scripts/relit/relit.py",
             CKPT_GEO,
             CKPT_ALBEDO,
             CKPT_ROUGH,

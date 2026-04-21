@@ -134,7 +134,7 @@ if __name__ == "__main__":
         )
 
         if not os.path.isfile(info[scene]["shape"]["output_mesh"]):
-            continue  # evaluating on a sub-scene => skip the scene if it wasn't processed before
+            continue  # evaluating on a subset of scenes => skip the scene if it wasn't processed before
         
         assert os.path.isfile(info[scene]["shape"]["output_mesh"])
 
@@ -151,6 +151,8 @@ if __name__ == "__main__":
                 .resolve()
                 .as_posix()
             )
+
+            print(info[scene]["geometry"][i]["output_depth"])
             assert os.path.isfile(info[scene]["geometry"][i]["output_depth"])
             assert os.path.isfile(info[scene]["geometry"][i]["output_normal"])
 
@@ -172,6 +174,7 @@ if __name__ == "__main__":
                 .resolve()
                 .as_posix()
             )
+            print(info[scene]["view"][i]["output_image"])
             assert os.path.isfile(info[scene]["view"][i]["output_image"])
 
         # relighting
@@ -192,6 +195,10 @@ if __name__ == "__main__":
     # Statistic & Sanity check
     for scene_name, scene_meta in info.items():
         stat = f"{scene_name:20s}: "
+
+        if not os.path.isfile(scene_meta["shape"]["output_mesh"]):
+            continue  # evaluating on a subset of scenes => skip the scene if it wasn't processed before
+        
 
         cnt_pred = 0
         for item in scene_meta["view"]:
