@@ -11,3 +11,10 @@ build/
 dist/
 results/
 **/examples/
+
+*.ply
+*.png
+**/results_*/**
+!**/results_*/stanford_orb/
+!**/results_*/stanford_orb/*.json
+

@@ -10,7 +10,7 @@ import gin
 import numpy as np
 import torch
 from irtk.config import configs
-from irtk.io import write_image
+from irtk.io import read_image, write_image
 from irtk.model import Model
 
 ftype = configs["ftype"]
@@ -26,13 +26,22 @@ class EnvmapLS(Model):
         scene,
         emitter_id,
         t_res_h=None,
+        gt_envmap_path=None,
         optimizer_kwargs={},
     ):
         super().__init__(scene)
 
         self.envmap = scene[emitter_id]
 
-        if isinstance(t_res_h, int):
+        if gt_envmap_path is not None:
+
+            img = read_image(gt_envmap_path)
+            if isinstance(img, torch.Tensor):
+                self.envmap["radiance"] = img.to(dtype=ftype, device=device)
+            else:  # numpy -> torch
+                self.envmap["radiance"] = torch.from_numpy(img).to(dtype=ftype, device=device)
+            # self.envmap["radiance"] = read_image(gt_envmap_path).to(dtype=ftype, device=device)
+        elif isinstance(t_res_h, int):
             self.envmap["radiance"] = (
                 torch.ones((t_res_h, t_res_h * 2, 3), dtype=ftype, device=device) * 0.5
             )
@@ -48,22 +57,26 @@ class EnvmapLS(Model):
         F = torch.from_numpy(np.concatenate(F))
 
         self.envmap_radiance = self.envmap_radiance.reshape(-1, 3)
-        self.envmap_radiance.requires_grad = True
 
-        self.optimizer = LargeStepsOptimizer(
-            self.envmap_radiance, F, **optimizer_kwargs
-        )
+        self.frozen = gt_envmap_path is not None
+        if not self.frozen:
+            self.envmap_radiance.requires_grad = True
+            self.optimizer = LargeStepsOptimizer(
+                self.envmap_radiance, F, **optimizer_kwargs
+            )
 
     def zero_grad(self):
-        self.optimizer.zero_grad()
+        if not self.frozen:
+            self.optimizer.zero_grad()
 
     def set_data(self):
         self.envmap["radiance"] = self.envmap_radiance.reshape(self.h, self.w, 3)
 
     def step(self):
-        self.optimizer.step()
-        with torch.no_grad():
-            self.envmap_radiance.copy_(torch.clamp_min(self.envmap_radiance, 0))
+        if not self.frozen:
+            self.optimizer.step()
+            with torch.no_grad():
+                self.envmap_radiance.copy_(torch.clamp_min(self.envmap_radiance, 0))
 
     def get_results(self):
         results = {

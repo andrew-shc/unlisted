@@ -68,6 +68,12 @@ if __name__ == "__main__":
     hyper_parser.add_argument("--render_video_factor", default=1, type=float)
     hyper_parser.add_argument("--dtu_postproc", action="store_true")
     hyper_parser.add_argument("--test_only", action="store_true")
+    hyper_parser.add_argument(
+        "--mesh_init_path",
+        default=None,
+        type=str,
+        help="path to a prior .obj mesh for SDF grid initialization and upres re-derivation",
+    )
     hyper_args = hyper_parser.parse_args()
 
     # modify config template
@@ -132,4 +138,9 @@ if __name__ == "__main__":
         / "neural_surface_recon"
     )
     cfg.data.datadir = str(hyper_args.dataroot)
+    if hyper_args.mesh_init_path is not None:
+        print(f"==> using mesh prior for SDF init: {hyper_args.mesh_init_path}")
+        cfg.fine_model_and_render.mesh_init_path = hyper_args.mesh_init_path
+        # precompute SDF at the final target resolution so each upres just interpolates
+        cfg.fine_model_and_render.mesh_init_max_voxels = cfg.fine_model_and_render.num_voxels
     run_template(arg_lst, cfg)

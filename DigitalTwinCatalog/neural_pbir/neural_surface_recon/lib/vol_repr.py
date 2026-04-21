@@ -47,6 +47,10 @@ class VolRepr(torch.nn.Module):
         sphere_init=False,
         sphere_init_scale=1,
         sphere_init_shift=-0.5,
+        # init sdf grid from a prior mesh (path to .obj); precompute SDF at
+        # mesh_init_max_voxels resolution once and interpolate at each upres step
+        mesh_init_path=None,
+        mesh_init_max_voxels=None,
         # if the bottom of the bbox is a solid plane
         on_known_board=False,
         # binary mask to skip free-space
@@ -85,6 +89,8 @@ class VolRepr(torch.nn.Module):
         self.i_am_fg = i_am_fg
         self.on_known_board = on_known_board
         self._name = "VolRepr-" + ("fg" if self.i_am_fg else "bg")
+        self.mesh_init_path = mesh_init_path
+        self.mesh_init_max_voxels = mesh_init_max_voxels
 
         # some geometry related scalar parameters
         self.sdf_mode = sdf_mode
@@ -124,6 +130,18 @@ class VolRepr(torch.nn.Module):
             config=self.density_config,
         )
 
+        # precompute mesh SDF at max resolution once; interpolated at each upres step
+        if mesh_init_path is not None and self.sdf_mode:
+            import trimesh as _trimesh
+            _mesh = _trimesh.load(mesh_init_path, force="mesh")
+            _max_vox = mesh_init_max_voxels if mesh_init_max_voxels is not None else num_voxels
+            with torch.no_grad():
+                _coord = self.get_coord_grid(num_voxels=_max_vox).moveaxis(0, -1)
+                _sdf = grid.compute_sdf_from_mesh(_coord, _mesh)
+            self.register_buffer("mesh_init_sdf", _sdf[None, None].float())
+        else:
+            self.register_buffer("mesh_init_sdf", None)
+
         geo_grid_dirty = False
 
         def update_geo_grid(init_val):
@@ -137,17 +155,21 @@ class VolRepr(torch.nn.Module):
             geo_grid_dirty = True
 
         with torch.no_grad():
-            if constant_init:
-                init_val = torch.full_like(self.density.grid.data, constant_init_val)
-                init_val += torch.randn_like(init_val) * 0.01
-                update_geo_grid(init_val)
-            if sphere_init:
-                C = (self.xyz_max + self.xyz_min) * 0.5
-                R = (self.xyz_max - self.xyz_min) * 0.5
-                xyz = (self.get_coord_grid().moveaxis(0, -1) - C) / R
-                xyz_norm = xyz.norm(dim=-1)
-                init_val = xyz_norm * sphere_init_scale + sphere_init_shift
-                update_geo_grid(init_val[None, None])
+            if mesh_init_path is not None and self.sdf_mode:
+                update_geo_grid(self._sdf_from_mesh_prior()[None, None])
+            else:
+                if constant_init:
+                    init_val = torch.full_like(self.density.grid.data, constant_init_val)
+                    init_val += torch.randn_like(init_val) * 0.01
+                    update_geo_grid(init_val)
+                if sphere_init:
+                    C = (self.xyz_max + self.xyz_min) * 0.5
+                    R = (self.xyz_max - self.xyz_min) * 0.5
+                    xyz = (self.get_coord_grid().moveaxis(0, -1) - C) / R
+                    xyz_norm = xyz.norm(dim=-1)
+                    init_val = xyz_norm * sphere_init_scale + sphere_init_shift
+                    update_geo_grid(init_val[None, None])
+                    self.density.grid.requires_grad_(False)
         print(f"{self._name}: geometry grid", self.density)
 
         # color representation initialization
@@ -305,6 +327,15 @@ class VolRepr(torch.nn.Module):
         print(f"{self._name}: voxel_size_base ", self.voxel_size_base)
         print(f"{self._name}: voxel_size_ratio", self.voxel_size_ratio)
 
+    def _sdf_from_mesh_prior(self):
+        # downsample the precomputed high-res buffer to current world_size — no mesh reload
+        return F.interpolate(
+            self.mesh_init_sdf,
+            size=tuple(self.world_size.tolist()),
+            mode="trilinear",
+            align_corners=True,
+        ).squeeze(0).squeeze(0)  # [NX, NY, NZ]
+
     def get_kwargs(self):
         return {
             "xyz_min": self.xyz_min.cpu().numpy(),
@@ -317,6 +348,8 @@ class VolRepr(torch.nn.Module):
             "sdf_scale_step": self.sdf_scale_step,
             "detach_sharpness": self.detach_sharpness,
             "alpha_init": self.alpha_init,
+            "mesh_init_path": self.mesh_init_path,
+            "mesh_init_max_voxels": self.mesh_init_max_voxels,
             "on_known_board": self.on_known_board,
             "mask_cache_path": self.mask_cache_path,
             "mask_cache_init_thres": self.mask_cache_init_thres,
@@ -390,6 +423,10 @@ class VolRepr(torch.nn.Module):
         )
 
         self.density.scale_volume_grid(self.world_size)
+        if self.sdf_mode and self.mesh_init_path is not None:
+            with torch.no_grad():
+                self.density.grid.data.copy_(self._sdf_from_mesh_prior()[None, None])
+            self.density.grid.requires_grad_(False)
         if (self.world_size_k0 != self.k0.world_size).any():
             self.k0.scale_volume_grid(self.world_size_k0)
 

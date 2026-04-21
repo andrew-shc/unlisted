@@ -497,7 +497,7 @@ def scene_rep_reconstruction(
             loss += cfg_train.weight_mask * mask_loss
 
         loss.backward()
-        if trainiter % 100 == 0 and model.density.type == "DenseGrid":
+        if trainiter % 100 == 0 and model.density.type == "DenseGrid" and model.density.grid.requires_grad:
             gridgrad = model.density.grid.grad.cpu().numpy()
             mask = gridgrad != 0
             gridgrad = gridgrad[mask]
@@ -512,7 +512,7 @@ def scene_rep_reconstruction(
             )
 
         # grid-level regularization
-        if cfg_train.weight_laplace > 0:
+        if cfg_train.weight_laplace > 0 and model.density.grid.requires_grad:
             neural_pbir_cuda_utils.laplace_add_grad(
                 model.density.grid.data,
                 model.density.grid.grad,

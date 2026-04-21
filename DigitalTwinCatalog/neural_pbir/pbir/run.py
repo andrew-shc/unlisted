@@ -15,7 +15,7 @@ from opt import optimize
 
 
 @gin.configurable
-def pipeline(configroot, ckptroot, dataset_class):
+def pipeline(configroot, ckptroot, dataset_class, gt_envmap_path=None):
     cfg = Config.fromfile(ckptroot / "neural_surface_recon" / "config.py")
 
     contains_board = cfg.fine_model_and_render.on_known_board
@@ -36,6 +36,10 @@ def pipeline(configroot, ckptroot, dataset_class):
         stage_config = configroot / f"{stage}.gin"
         gin.parse_config_file(stage_config)
 
+        if gt_envmap_path is not None:
+            gin.bind_parameter("EnvmapSG.gt_envmap_path", gt_envmap_path)
+            gin.bind_parameter("EnvmapLS.gt_envmap_path", gt_envmap_path)
+
         if stage == "microfacet_basis-envmap_ls-shape_ls" and contains_board:
             v = scene["mesh.v"]
             v_mask = torch.ones_like(v)
@@ -53,6 +57,12 @@ if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("configroot", type=str, help="gin config directory")
     parser.add_argument("ckptroot", type=str, help="gin config directory")
+    parser.add_argument(
+        "--gt_envmap_path",
+        type=str,
+        default=None,
+        help="path to a ground-truth envmap .exr; freezes envmap optimization",
+    )
     args = parser.parse_args()
 
     configroot = Path(args.configroot)
@@ -60,4 +70,4 @@ if __name__ == "__main__":
 
     gin.parse_config_file(configroot / "pipeline.gin")
 
-    pipeline(configroot=configroot, ckptroot=ckptroot)
+    pipeline(configroot=configroot, ckptroot=ckptroot, gt_envmap_path=args.gt_envmap_path)

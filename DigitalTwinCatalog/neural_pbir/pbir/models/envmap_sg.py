@@ -9,7 +9,7 @@ from pathlib import Path
 import gin
 import torch
 from irtk.config import configs
-from irtk.io import write_image
+from irtk.io import read_image, write_image
 from irtk.model import Model
 
 ftype = configs["ftype"]
@@ -27,13 +27,21 @@ class EnvmapSG(Model):
         numLgtSGs=128,
         num_init_iter=1000,
         t_res_h=None,
+        gt_envmap_path=None,
         optimizer_kwargs={},
     ):
         super().__init__(scene)
 
         self.envmap = scene[emitter_id]
 
-        if isinstance(t_res_h, int):
+        if gt_envmap_path is not None:
+            img = read_image(gt_envmap_path)
+            if isinstance(img, torch.Tensor):
+                self.envmap["radiance"] = img.to(dtype=ftype, device=device)
+            else:  # numpy -> torch
+                self.envmap["radiance"] = torch.from_numpy(img).to(dtype=ftype, device=device)
+            # self.envmap["radiance"] = read_image(gt_envmap_path).to(dtype=ftype, device=device)
+        elif isinstance(t_res_h, int):
             self.envmap["radiance"] = (
                 torch.ones((t_res_h, t_res_h * 2, 3), dtype=ftype, device=device) * 0.5
             )
@@ -41,26 +49,30 @@ class EnvmapSG(Model):
         self.h = self.envmap["radiance"].shape[0]
         self.w = self.envmap["radiance"].shape[1]
 
-        self.lgtSGs = Envmap2SG(
-            self.envmap["radiance"].clone(),
-            numLgtSGs=numLgtSGs,
-            N_iter=num_init_iter,
-            fixed_lobe=True,
-        )
-        self.lgtSGs = self.lgtSGs.to(device).requires_grad_()
-
-        self.optimizer = torch.optim.Adam([self.lgtSGs], **optimizer_kwargs)
+        self.frozen = gt_envmap_path is not None
+        if not self.frozen:
+            self.lgtSGs = Envmap2SG(
+                self.envmap["radiance"].clone(),
+                numLgtSGs=numLgtSGs,
+                N_iter=num_init_iter,
+                fixed_lobe=True,
+            )
+            self.lgtSGs = self.lgtSGs.to(device).requires_grad_()
+            self.optimizer = torch.optim.Adam([self.lgtSGs], **optimizer_kwargs)
 
     def zero_grad(self):
-        self.optimizer.zero_grad()
+        if not self.frozen:
+            self.optimizer.zero_grad()
 
     def set_data(self):
-        envmap = SG2Envmap(self.lgtSGs, H=self.h, W=self.w)
-        envmap = torch.clip(envmap, min=0, max=None)
-        self.envmap["radiance"] = envmap
+        if not self.frozen:
+            envmap = SG2Envmap(self.lgtSGs, H=self.h, W=self.w)
+            envmap = torch.clip(envmap, min=0, max=None)
+            self.envmap["radiance"] = envmap
 
     def step(self):
-        self.optimizer.step()
+        if not self.frozen:
+            self.optimizer.step()
 
     def get_results(self):
         results = {
