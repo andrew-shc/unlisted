@@ -3,7 +3,8 @@
     "allow": [
       "WebSearch",
       "Bash(conda run:*)",
-      "Bash(conda env:*)"
+      "Bash(conda env:*)",
+      "Bash(PIP_FIND_LINKS=\"https://nvidia-kaolin.s3.us-east-2.amazonaws.com/torch-2.5.1_cu121.html\" conda run -n relax-flow pip install -e '.[inference]')"
     ]
   }
 }

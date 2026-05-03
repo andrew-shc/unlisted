@@ -2,7 +2,6 @@ from typing import *
 import torch
 from ..voxel import Voxel
 import cumesh
-from flex_gemm.ops.grid_sample import grid_sample_3d
 
 
 class Mesh:
@@ -220,6 +219,7 @@ class MeshWithVoxel(Mesh, Voxel):
         )
         
     def query_attrs(self, xyz):
+        from flex_gemm.ops.grid_sample import grid_sample_3d
         grid = ((xyz - self.origin) / self.voxel_size).reshape(1, -1, 3)
         vertex_attrs = grid_sample_3d(
             self.attrs,
