@@ -57,7 +57,8 @@
       "Bash(echo \"Exit: $?\")",
       "Bash(awk '{print $1, $6, $7, $8, $9}')",
       "Bash(awk '{print \"PID:\"$2, \"CPU:\"$3, \"MEM:\"$4}')",
-      "Bash(awk '{print \"running:\", $11, $12}')"
+      "Bash(awk '{print \"running:\", $11, $12}')",
+      "Bash(git status *)"
     ]
   }
 }
