@@ -1,6 +1,7 @@
 *
 !*/
 !*.*
+.env
 
 __pycache__/
 *.py[cod]
@@ -14,6 +15,15 @@ results/
 
 *.ply
 *.png
+*.gif
+*.glb
+*.exr
+*.npz
+wandb/
+restir_NPBIR_v1/
+shape_opt_irtk/
+standard_NPBIR/
+standard_NPBIR_reeval/
 **/results_*/**
 !**/results_*/stanford_orb/
 !**/results_*/stanford_orb/*.json

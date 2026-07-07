@@ -1,5 +1,8 @@
 {
   "permissions": {
+    "deny": [
+      "Read(/home/ahc/Documents/metrology_ir/.env)"
+    ],
     "allow": [
       "Bash(conda run:*)",
       "Read(//tmp/**)",
@@ -26,7 +29,13 @@
       "Bash(nvcc --version)",
       "Read(//usr/local/**)",
       "Bash(python -c \"import numpy as np; d = np.load\\('/home/ahc/Documents/metrology_ir/pose_enc_qtf.npz'\\); print\\(list\\(d.keys\\(\\)\\)\\); print\\({k: d[k].shape for k in d}\\)\")",
-      "Read(//home/ahc/miniconda3/envs/**)"
+      "Read(//home/ahc/miniconda3/envs/**)",
+      "Bash(find /tmp -name \"envmap.cpp\" 2>/dev/null | head -3 *)",
+      "Read(//home/ahc/**)",
+      "Bash(python3 -c \"import psdr_jit; print\\(psdr_jit.__version__, psdr_jit.__file__\\)\")",
+      "Bash(grep -v \"^$\")",
+      "Bash(nvidia-smi)",
+      "Bash(conda env *)"
     ]
   }
 }

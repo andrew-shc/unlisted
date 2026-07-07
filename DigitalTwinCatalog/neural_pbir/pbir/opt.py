@@ -8,10 +8,22 @@ from pathlib import Path
 from time import time
 
 import gin
+import numpy as np
 import torch
 from irtk.io import write_image, write_mesh
 from irtk.loss import l1_loss
 from tqdm import tqdm
+
+try:
+    import wandb as _wb
+except ImportError:
+    _wb = None
+
+try:
+    from PIL import Image as _PILImage
+    _HAS_PIL = True
+except ImportError:
+    _HAS_PIL = False
 
 
 @gin.configurable
@@ -41,6 +53,7 @@ def optimize(
     # Optimization related
     max_iter = min(max_iter, len(opt_sensor_ids) * num_epochs)
     loss_record = []
+    _vis_frames = []
     iter = 0
 
     # End configuration and begin optimization
@@ -79,6 +92,14 @@ def optimize(
 
             loss_record.append(loss.item())
 
+            if _wb is not None and _wb.run is not None:
+                _wb.log({
+                    "pbir/loss":       loss.item(),
+                    "pbir/image_loss": image_loss.item(),
+                    "pbir/render_ms":  render_time * 1000,
+                    "pbir/opt_ms":     opt_time * 1000,
+                }, step=iter)
+
             iter += 1
 
             pbar.update(1)
@@ -103,6 +124,19 @@ def optimize(
                 write_image(iter_path / "vis.exr", final_image)
 
                 torch.save(loss_record, result_path / "loss.pt")
+
+                _vis_np = np.clip(
+                    vis_images_cat.detach().cpu().float().numpy() ** (1 / 2.2), 0, 1
+                )
+                _vis_frames.append(_vis_np[::2, ::2])
+                if _wb is not None and _wb.run is not None:
+                    _tar_np = np.clip(
+                        tar_images_cat.detach().cpu().float().numpy() ** (1 / 2.2), 0, 1
+                    )
+                    _wb.log(
+                        {"pbir/vis": _wb.Image(np.concatenate([_tar_np, _vis_np], axis=0))},
+                        step=iter,
+                    )
 
             if iter == max_iter:
                 pbar.close()
@@ -131,6 +165,24 @@ def optimize(
                 uv = scene["mesh.uv"]
                 fuv = scene["mesh.fuv"]
                 write_mesh(final_path / "mesh.obj", v, f, uv, fuv)
+
+                if _wb is not None and _wb.run is not None:
+                    _wb.log({
+                        "pbir/final_diffuse":   _wb.Image(
+                            np.clip(d.detach().cpu().numpy() ** (1 / 2.2), 0, 1)),
+                        "pbir/final_roughness": _wb.Image(
+                            np.clip(r.detach().cpu().numpy(), 0, 1)),
+                        "pbir/final_envmap":    _wb.Image(
+                            np.clip(envmap.detach().cpu().numpy() /
+                                    max(envmap.max().item(), 1e-6), 0, 1)),
+                    })
+                    if _vis_frames and _HAS_PIL:
+                        _gif_path = str(result_path / "vis_animation.gif")
+                        _u8 = [(_f * 255).astype(np.uint8) for _f in _vis_frames]
+                        _pf = [_PILImage.fromarray(_f) for _f in _u8]
+                        _pf[0].save(_gif_path, save_all=True,
+                                    append_images=_pf[1:], duration=250, loop=0)
+                        _wb.log({"pbir/animation": _wb.Video(_gif_path, fps=4, format="gif")})
 
                 scene.clear_cache()
 
