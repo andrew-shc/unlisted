@@ -2,6 +2,7 @@
 !*/
 !*.*
 .env
+/ASSETS/
 
 __pycache__/
 *.py[cod]
