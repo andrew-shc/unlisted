@@ -46,6 +46,30 @@ Instructions for coding agents working in this repository.
 - `GREENFIELD/AGENTS.md` is special: it describes the research idea and high-level domain-specific intent of the project, not just directory bookkeeping. Subdirectories under `GREENFIELD/` still get their own regular per-directory `AGENTS.md` (purpose + gotchas) as they're created.
 - `./OLD/` is a reference cabinet for our own code that's no longer in active use but might be useful again later. When you set something aside instead of deleting it, move it here rather than leaving it cluttering the main tree or silently deleting it.
 
+## Pushing this repo
+- `git push git@github.com:andrew-shc/unlisted.git main:metrology_ir`
+
+## Installing psdr-jit (after installing Neural-PBIR)
+```bash
+pip uninstall psdr-jit
+cd ../psdr-jit
+git submodule update --init --recursive
+pip install --no-build-isolation -ve . --config-settings=cmake.args="-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
+
+# verify
+python -c "import psdr_jit; print(psdr_jit.__file__)"
+```
+(Same steps as the "Rebuilding psdr-jit" recipe under Build environment above — that one's for reinstalling into an *existing* env after a source change, this one's for a fresh install.)
+
+## Notebooks
+- Prefer regular `.py` files over `.ipynb` notebooks for anything new — notebooks make diffs, code review, and reuse (importing a function from another script) harder, and this repo has accumulated enough of them that it's worth reversing the trend.
+- Don't force a rewrite of every existing notebook proactively, but when you're touching one anyway (extending it, debugging it, reusing its logic elsewhere), rewrite it into a `.py` file as part of that work rather than adding more to the notebook.
+- Exploratory/throwaway one-off analysis is the one case where a notebook is still fine — anything meant to be re-run or built on should be a script.
+
+## .gitignore
+- Keep `.gitignore` organized into the labeled sections already there (extensionless-binary catch-all, secrets, data, Python artifacts, vendored examples, data-file-extension safety net, brownfield `results_*/` carve-out) — add new entries to the matching section with a comment, don't append one-off rules at the bottom.
+- Most new data should never need a `.gitignore` entry at all: it belongs under `ASSETS/`, which is already wholly ignored. Only add a new pattern here for something that can't live in `ASSETS/` yet (e.g. an untouched brownfield folder's own output directory).
+
 ## Greenfield vs. brownfield work
 This repo frequently works by `git clone`-ing someone else's research repo into a subdirectory and re-running their own build/pipeline inside it (see e.g. `TensoSDF/`, `nvdiffrecmc/`, `TRELLIS.2/`, `vggt/`, `WNNC/`, `DigitalTwinCatalog/`, `Stanford-ORB/`, `MIRReS-ReSTIR_Nerf_mesh/`, `DTUeval-python/`). This creates a mix of "brownfield" (pre-existing, vendored) and "greenfield" (new, ours) code.
 

@@ -61,10 +61,13 @@ from dotenv import load_dotenv
 import wandb
 load_dotenv(".env")
 
+# WandB writes its local run logs under `dir` — default into ASSETS/ (per
+# AGENTS.md's data-separation rule) but let WANDB_DIR override it.
 _wandb_run = wandb.init(
     project=os.environ["WANDB_PROJECT"],
     entity=os.environ["WANDB_ENTITY"],
     name=METHOD,
+    dir=os.environ.get("WANDB_DIR", "ASSETS/wandb"),
     config={"method": METHOD, "scenes": SCENES_LIGHT},
 )
 

@@ -200,6 +200,9 @@ if __name__ == "__main__":
         wandb.init(
             project=os.environ.get("WANDB_PROJECT", "ReSTIR PBIR"),
             entity=os.environ.get("WANDB_ENTITY"),
+            # this script runs with CWD inside DigitalTwinCatalog/, so route wandb's
+            # local run dir back to the repo-root ASSETS/ (see AGENTS.md); WANDB_DIR overrides.
+            dir=os.environ.get("WANDB_DIR", str(Path(__file__).parents[3] / "ASSETS" / "wandb")),
             name=f"restir_NPBIR_v1/{ckptroot.name}",
             config={
                 "method":                 "restir_NPBIR_v1",

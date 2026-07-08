@@ -1,9 +1,22 @@
+# Extensionless files are ignored by default (catches vendored build
+# binaries like WNNC's main_GaussRecon_cpu/cuda) — directories and any
+# file with a dot in its name are exempted so this doesn't swallow
+# ordinary tracked files.
 *
 !*/
 !*.*
+
+# Secrets — see AGENTS.md's Secrets (.env) section.
 .env
+
+# Data — see AGENTS.md's Data (ASSETS/) section. All data — including
+# brownfield/vendored output and wandb run logs — belongs under
+# ASSETS/, which is wholly ignored. No extension-specific or
+# per-folder data carve-outs needed; if something's producing data
+# outside ASSETS/, redirect its output instead of gitignoring it here.
 /ASSETS/
 
+# Python
 __pycache__/
 *.py[cod]
 *.pyd
@@ -11,21 +24,6 @@ __pycache__/
 .Python
 build/
 dist/
-results/
+
+# Vendored sample/example assets bundled with cloned repos.
 **/examples/
-
-*.ply
-*.png
-*.gif
-*.glb
-*.exr
-*.npz
-wandb/
-restir_NPBIR_v1/
-shape_opt_irtk/
-standard_NPBIR/
-standard_NPBIR_reeval/
-**/results_*/**
-!**/results_*/stanford_orb/
-!**/results_*/stanford_orb/*.json
-

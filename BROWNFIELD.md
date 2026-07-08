@@ -11,7 +11,7 @@ Status legend: not started | partial | migrated
 | TRELLIS.2 | not started | vendored |
 | vggt | not started | vendored |
 | WNNC | not started | vendored |
-| DigitalTwinCatalog | not started | vendored |
+| DigitalTwinCatalog | partial | vendored; wandb output from our own `run_restir.py`/`run_restir_fwd.py` (added by us into `neural_pbir/pbir/`) redirected to `ASSETS/wandb/` — rest of the vendored tree untouched |
 | Stanford-ORB | not started | vendored, eval data |
 | MIRReS-ReSTIR_Nerf_mesh | not started | vendored |
 | DTUeval-python | not started | vendored |

@@ -279,13 +279,16 @@ def run_opt(label, scene, render_opt, target, V_gt, wandb_run=None):
 # ---------------------------------------------------------------------------
 
 def main():
-    load_dotenv(Path(__file__).parent / '.env')
+    load_dotenv(Path(__file__).parent.parent / '.env')
 
     try:
         import wandb
+        # WandB writes its local run logs under `dir` — default into ASSETS/
+        # (per AGENTS.md's data-separation rule) but let WANDB_DIR override it.
         run = wandb.init(
             project=os.environ.get('WANDB_PROJECT', 'ReSTIR PBIR'),
             entity=os.environ.get('WANDB_ENTITY'),
+            dir=os.environ.get('WANDB_DIR', 'ASSETS/wandb'),
             name='cornell_restir_fwd_vs_standard',
             config={
                 'scene': 'cornell_box',

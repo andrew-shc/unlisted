@@ -36,10 +36,13 @@ SORB_HDR = f"{SORB}/blender_HDR"
 SORB_GT  = f"{SORB}/ground_truth"
 
 # ── WandB init ───────────────────────────────────────────────────────────────
+# WandB writes its local run logs under `dir` — default into ASSETS/ (per
+# AGENTS.md's data-separation rule) but let WANDB_DIR override it.
 _run = wandb.init(
     project=os.environ["WANDB_PROJECT"],
     entity=os.environ["WANDB_ENTITY"],
     name=f"{METHOD}/{SCENE}",
+    dir=os.environ.get("WANDB_DIR", "ASSETS/wandb"),
     config={
         "method":  METHOD,
         "scene":   SCENE,
