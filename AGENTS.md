@@ -2,6 +2,9 @@
 
 Instructions for coding agents working in this repository.
 
+## Commits
+- Never auto-commit. Only commit when the user explicitly asks you to, and only after they've had a chance to see the diff.
+
 ## Documentation
 - Code should be self-documenting: use clear names, and comment generously to explain intent, non-obvious choices, and gotchas — don't be stingy with comments in this repo. This applies to our own (greenfield) code; see below for vendored/brownfield code.
 - Every subdirectory under `GREENFIELD/` (our own code) should have its own `AGENTS.md` describing that directory's high-level purpose, its subdirectories, and any known bugs/mistakes to avoid. When you create a new directory there, add an `AGENTS.md` to it. When you learn something painful about an existing directory, add it there instead of just fixing the code silently. (`GREENFIELD/AGENTS.md` itself is special — see below.)
