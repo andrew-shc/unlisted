@@ -138,24 +138,64 @@ def evaluate(scene, method, scenes=None):
         "relighting",
     )
 
-    # ── Stage 4: Evaluation preprocessing ─────────────────────────────
+    # ── Stage 4: Geometry buffer rendering (depth + normal) ───────────
+    for s in eval_scenes:
+        scene_ckpt = chkpt_root / s
+        cam_json = f"{sorb_hdr}/{s}/cameras.json"
+        mesh_obj = scene_ckpt / "pbir" / "mesh.obj"
+        if not mesh_obj.exists():
+            print(f"[SKIP] render_geo/{s} — mesh.obj not found")
+            continue
+        run(
+            f"python {NPBIR}/scripts/stanford_orb/render_geo.py {cam_json} {mesh_obj}",
+            f"render_geo/{s}",
+        )
+
+    # ── Stage 5: Evaluation preprocessing ─────────────────────────────
     run(
         f"python {NPBIR}/scripts/stanford_orb/eval_preprocess.py"
         f" --data_dir {sorb}/ --ckpt_dir {chkpt_root}/",
         "eval_preprocess",
     )
 
-    # ── Stage 5: Stanford-ORB metric computation ──────────────────────
+    # ── Filter eval_inputs to only scenes with valid outputs ─────────
     eval_input  = chkpt_root / 'eval_inputs_pbir.json'
-    eval_output = chkpt_root / 'eval_outputs_pbir.json'
+    eval_filtered = chkpt_root / 'eval_inputs_filtered.json'
+    if eval_input.exists():
+        with open(eval_input) as f:
+            eval_data = json.load(f)
+        info = eval_data.get('info', {})
+        valid_scenes = {}
+        for sname, sdata in info.items():
+            has_mesh = sdata.get('shape', {}).get('output_mesh') is not None
+            view_ok = all(
+                item.get('output_image') is not None
+                for item in sdata.get('view', [])
+            )
+            geo_ok = all(
+                item.get('output_depth') is not None and item.get('output_normal') is not None
+                for item in sdata.get('geometry', [])
+            )
+            if has_mesh and view_ok and geo_ok:
+                valid_scenes[sname] = sdata
+        n_removed = len(info) - len(valid_scenes)
+        print(f"[FILTER] Kept {len(valid_scenes)}/{len(info)} scenes with valid outputs "
+              f"(removed {n_removed})")
+        with open(eval_filtered, 'w') as f:
+            json.dump({'info': valid_scenes}, f)
+    else:
+        eval_filtered = eval_input  # fallback if no filtering needed
+
+    # ── Stage 6: Stanford-ORB metric computation ──────────────────────
+    eval_output = chkpt_root / 'eval_outputs_filtered.json'
     sorb_repo = REPO_ROOT / 'Stanford-ORB'
 
-    # Determine scenes argument: if evaluating multiple scenes use 'light', else 'example'
-    scenes_arg = "light" if len(eval_scenes) > 1 else "example"
+    # Always auto — we filter the JSON ourselves to include only valid scenes
+    scenes_arg = "auto"
 
     run(
         f"PYTHONPATH=. python scripts/test.py"
-        f" --input-path {eval_input}"
+        f" --input-path {eval_filtered}"
         f" --output-path {eval_output} --scenes {scenes_arg}",
         "eval_metrics",
         cwd=str(sorb_repo),

@@ -200,7 +200,20 @@ if __name__ == "__main__":
     parser.add_argument("ckptroot",   type=str, help="Path to checkpoint root (scene folder)")
     parser.add_argument("--gt_envmap_path", type=str, default=None,
                         help="Optional ground-truth envmap for supervision")
+    parser.add_argument("--method", type=str, default="restir_NPBIR_v1",
+                        help="Method name (for wandb & output path)")
+    parser.add_argument("--fwd-spp", type=int, default=4,
+                        help="Forward pass spp (PathTracer)")
+    parser.add_argument("--candidates", type=int, default=2,
+                        help="ReSTIR n_candidates (spatial resampling)")
+    parser.add_argument("--iters", type=int, default=200,
+                        help="Max optimization iterations")
     args = parser.parse_args()
+
+    # Override config with CLI arguments
+    FWD_OPT['spp']     = args.fwd_spp
+    RESTIR_CONFIG['n_candidates'] = args.candidates
+    MAX_ITER           = args.iters
 
     configroot = Path(args.configroot)
     ckptroot   = Path(args.ckptroot)
@@ -214,9 +227,9 @@ if __name__ == "__main__":
             project=os.environ.get("WANDB_PROJECT", "ReSTIR PBIR"),
             entity=os.environ.get("WANDB_ENTITY"),
             dir=os.environ.get("WANDB_DIR", str(REPO_ROOT / "ASSETS" / "wandb")),
-            name=f"restir_NPBIR_v1/{ckptroot.name}",
+            name=f"{args.method}/{ckptroot.name}",
             config={
-                "method":                 "restir_NPBIR_v1",
+                "method":                 args.method,
                 "scene":                  ckptroot.name,
                 "restir_n_candidates":    RESTIR_CONFIG['n_candidates'],
                 "restir_n_neighbors":     RESTIR_CONFIG['n_neighbors'],

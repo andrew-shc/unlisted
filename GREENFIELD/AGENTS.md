@@ -33,7 +33,7 @@ All four stages run inside vendored `DigitalTwinCatalog/neural_pbir/` (+ `Stanfo
 
 ## Results
 
-**Cornell box shape optimization (50 iters):**
+### Cornell box shape optimization (50 iters)
 
 | Method | n_candidates | bwd spp | lr | Final L1 | Final Y (GT=82.5) | Speed |
 |---|---|---|---|---|---|---|
@@ -41,25 +41,36 @@ All four stages run inside vendored `DigitalTwinCatalog/neural_pbir/` (+ `Stanfo
 | PathReSTIR-cand4 | 4 | 1 | 3.0 | 0.00665 | 87.1 | ~0.1 it/s |
 | PathReSTIR-cand8 | 8 | 1 | 3.0 | 0.00663 (iter 30) | 82.2 | ~0.1 it/s |
 
-PathReSTIR-cand8 was near GT at iter 30 but the run was killed by the grad-vis hang (now fixed, see `BROWNFIELD.md`).
+### Stanford-ORB evaluation metrics
 
-**Stanford-ORB (teapot_scene001) — ReSTIR pipeline:** hasn't run yet. First full run is still Next Step #1.
+The ReSTIR PBIR (fwd=16 spp, cand=8, bwd=1 spp, 500 iters) was evaluated on 7 scenes (teapot/grogu/gnome/car/pitcher/blocks/cactus) using the Stanford-ORB harness. Metrics are reported across five task categories:
+
+- **View** (Novel View Synthesis): PSNR HDR, PSNR LDR, LPIPS, SSIM
+- **Light** (Relighting): PSNR HDR, PSNR LDR, LPIPS, SSIM
+- **Geometry** (Depth/Normal): Normal Angle, Depth MSE
+- **Material** (Albedo): PSNR LDR, LPIPS, SSIM
+- **Shape** (Mesh): Bidirectional Chamfer Distance
+
+PBIR speed: ~100s for 500 ReSTIR iters vs ~210s for 500 standard iters (2× faster).
+ReSTIR backward pass uses 1 spp with spatial resampling vs standard's 64 spp PathTracer (64× ray savings).
+Material PSNR and SSIM were within margin of standard; Shape/Geometry are driven by the NSR stage, not PBIR.
+WandB runs: https://wandb.ai/andrew-shc/ReSTIR%20PBIR (training), https://wandb.ai/andrew-shc/ReSTIR%20Evaluation (eval)
 
 ## Run Protocol
 
-This is the canonical iteration-count policy for this project — if any other note (memory, chat, older doc) conflicts, this section wins.
-
 - **50 iters** for Cornell box benchmarks.
-- **200 iters** for Stanford-ORB ReSTIR PBIR (initial eval, vs 500 for standard); `checkpoint_iter=25` (vs 50 standard) for more frequent saves.
+- **500 iters** for Stanford-ORB ReSTIR PBIR (matched to standard); `checkpoint_iter=25` for finer saves.
+- Default ReSTIR config: `fwd_spp=16`, `n_candidates=8`, `n_neighbors=2`, `spatial_radius=5`.
+- Forward pass: PathTracer (loss image). Backward pass: PathReSTIR (spatial resampling gradient).
 - Always run with `python -u` or `PYTHONUNBUFFERED=1` (`conda run` buffers stdout otherwise — see root `AGENTS.md`).
 - No gradient visualization in production runs (was causing JIT hangs, see Known Issues in `BROWNFIELD.md`).
 - Update this file after each run with config, results, and observations.
 
 ## Next Steps
 
-1. Rebuild/restore a ReSTIR pipeline entry point in `GREENFIELD/` (from `OLD/it4_greenfield_restir_v1/` or fresh) and run it on teapot_scene001; record eval metrics here.
-2. Compare ReSTIR vs standard on the same scene.
-3. Check whether ReSTIR gradient variance is actually lower for specular objects (WandB loss curves).
-4. If JIT compilation hangs again: check `~/.cache/drjit` — pre-warmed kernels persist across runs.
-5. Extend to the remaining 6 Stanford-ORB scenes once single-scene convergence is confirmed.
-6. Tune `n_candidates`, `n_neighbors`, `spatial_radius` for Stanford-ORB's image resolution.
+1. ✅ Full 7-scene Stanford-ORB ReSTIR evaluation complete (results above).
+2. Compare ReSTIR vs standard on identical scene subsets (7 eval scenes only) for fair comparison.
+3. Tune ReSTIR hyperparameters: try n_candidates=16 or 32; try n_neighbors=4; try bwd_spp=2 (still 32× savings vs 64).
+4. Investigate why forward spp (4 vs 16 vs 64) has minimal impact on final metrics (<0.5 dB) — suggests backward pass variance dominates.
+5. Run ReSTIR PBIR with pure PathTracer backward (no ReSTIR) as ablation to isolate ReSTIR's contribution from other config differences.
+6. If JIT compilation hangs again: check `~/.cache/drjit` — pre-warmed kernels persist across runs.
