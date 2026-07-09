@@ -1,0 +1,25 @@
+{
+	"$schema": "https://opencode.ai/config.json",
+	// Project-level overrides, merged on top of ~/.config/opencode/opencode.jsonc.
+	"permission": {
+		"read": {
+			"*": "allow",
+			".env": "deny",
+			"**/.env": "deny",
+			".env.*": "deny",
+			"**/.env.*": "deny"
+		},
+		"edit": {
+			"*": "allow",
+			"GREENFIELD/**": "allow"
+		},
+		"bash": {
+			"*": "allow",
+			"rm GREENFIELD/*": "allow",
+			"rm -r GREENFIELD/*": "allow",
+			"rm -rf GREENFIELD/*": "allow",
+			"mkdir GREENFIELD/*": "allow",
+			"mkdir -p GREENFIELD/*": "allow"
+		}
+	}
+}

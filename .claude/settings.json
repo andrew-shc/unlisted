@@ -1,9 +1,19 @@
 {
   "permissions": {
     "deny": [
-      "Read(/home/ahc/Documents/metrology_ir/.env)"
+      "Read(.env)",
+      "Read(**/.env)",
+      "Read(.env.*)",
+      "Read(**/.env.*)"
     ],
     "allow": [
+      "Write(GREENFIELD/**)",
+      "Edit(GREENFIELD/**)",
+      "Bash(rm GREENFIELD/*)",
+      "Bash(rm -r GREENFIELD/*)",
+      "Bash(rm -rf GREENFIELD/*)",
+      "Bash(mkdir GREENFIELD/*)",
+      "Bash(mkdir -p GREENFIELD/*)",
       "Bash(conda run:*)",
       "Read(//tmp/**)",
       "Bash(mkdir -p torch_inspect)",

@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cmake --build . --target psdr_jit)",
+      "Bash(PYTHONPATH=build/cp311-cp311-linux_x86_64/lib python3 -c ' *)",
+      "Bash(conda run -n metrology_ir python3 -c ' *)",
+      "Bash(conda run *)",
+      "Bash(nm -D /home/ahc/Documents/psdr-jit/build/cp311-cp311-linux_x86_64/lib/psdr_jit.cpython-311-x86_64-linux-gnu.so)",
+      "Bash(nm -D /home/ahc/Documents/psdr-jit/build/cp311-cp311-linux_x86_64/lib/psdr_jit.so)"
+    ]
+  }
+}

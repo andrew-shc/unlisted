@@ -7,6 +7,7 @@ Instructions for coding agents working in this repository.
 
 ## Documentation
 - Code should be self-documenting: use clear names, and comment generously to explain intent, non-obvious choices, and gotchas — don't be stingy with comments in this repo. This applies to our own (greenfield) code; see below for vendored/brownfield code.
+- Keep greenfield files small and flat: each file should read as roughly one function, one class, or a handful of tightly related utility functions — not a module with several unrelated responsibilities bundled together. The goal is that skimming file names and sizes in `GREENFIELD/` should surface most of the codebase's functionality at a glance, without opening files. When a file starts accumulating a second distinct responsibility, split it out into its own file rather than growing it.
 - Every subdirectory under `GREENFIELD/` (our own code) should have its own `AGENTS.md` describing that directory's high-level purpose, its subdirectories, and any known bugs/mistakes to avoid. When you create a new directory there, add an `AGENTS.md` to it. When you learn something painful about an existing directory, add it there instead of just fixing the code silently. (`GREENFIELD/AGENTS.md` itself is special — see below.)
 - `.env` and `ASSETS/` are both gitignored — never force-add them.
 
@@ -30,11 +31,12 @@ Instructions for coding agents working in this repository.
 ## Build environment
 - Main conda env: `metrology_ir` (python3.11) — activate with `conda activate metrology_ir` before running any pipeline script (`nbir_setup_refined.py`, `nbir_restir_pipeline.py`, etc.).
 - `psdr-jit` is not a separate environment — it's a dependency built and installed *inside* `metrology_ir`; its `.so` lands in `$CONDA_PREFIX/lib/python3.11/site-packages/psdr_jit/` (i.e. inside the `metrology_ir` env).
+- `./psdr-jit/` lives at the repo root and, unlike other vendored brownfield folders, is **directly tracked** by this repo's own git (no nested `.git`, no gitlink/submodule) since it's actively developed as part of this project rather than pinned as an external clone — see BROWNFIELD.md for provenance and where its prior standalone history was backed up. Its `build/` output and `.so` artifacts are already covered by the root `.gitignore` (extensionless catch-all + `build/`/`*.so` rules), so nothing extra is needed to keep them untracked.
 - `conda run` buffers stdout until process exit — use `conda run --no-capture-output` or set `PYTHONUNBUFFERED=1`.
 - Rebuilding psdr-jit (run with `metrology_ir` active):
   ```bash
   pip uninstall psdr-jit
-  cd ../psdr-jit
+  cd psdr-jit
   git submodule update --init --recursive
   pip install --no-build-isolation -ve . --config-settings=cmake.args="-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
   python -c "import psdr_jit; print(psdr_jit.__file__)"  # verify
@@ -52,7 +54,7 @@ Instructions for coding agents working in this repository.
 ## Installing psdr-jit (after installing Neural-PBIR)
 ```bash
 pip uninstall psdr-jit
-cd ../psdr-jit
+cd psdr-jit
 git submodule update --init --recursive
 pip install --no-build-isolation -ve . --config-settings=cmake.args="-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
 
