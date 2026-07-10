@@ -1,0 +1,3 @@
+[submodule "agent-code-report"]
+	path = agent-code-report
+	url = https://github.com/andrew-shc/agent-code-report.git
